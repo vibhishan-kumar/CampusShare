@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import socket from '../api/socket';
 import { 
   Send, 
   MessageSquare, 
@@ -58,7 +59,12 @@ export default function MessagesPage() {
 
   useEffect(() => {
     loadConversations();
-  }, []);
+
+    // Join user socket room
+    if (user?.id) {
+      socket.emit('join_user', user.id);
+    }
+  }, [user?.id]);
 
   // 2. Fetch Messages for Active Conversation
   const loadMessages = async (convoId) => {
@@ -77,9 +83,29 @@ export default function MessagesPage() {
   useEffect(() => {
     if (activeConvoId) {
       loadMessages(activeConvoId);
-      // Poll every 4 seconds for new incoming messages
-      const interval = setInterval(() => loadMessages(activeConvoId), 4000);
-      return () => clearInterval(interval);
+      socket.emit('join_conversation', activeConvoId);
+
+      // Real-time message listener
+      const handleReceiveMessage = (newMsg) => {
+        if (Number(newMsg.conversation_id) === Number(activeConvoId)) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+        }
+        loadConversations();
+      };
+
+      socket.on('receive_message', handleReceiveMessage);
+
+      // Backup polling every 8s
+      const interval = setInterval(() => loadMessages(activeConvoId), 8000);
+
+      return () => {
+        socket.emit('leave_conversation', activeConvoId);
+        socket.off('receive_message', handleReceiveMessage);
+        clearInterval(interval);
+      };
     }
   }, [activeConvoId]);
 

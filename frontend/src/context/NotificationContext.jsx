@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
+import socket from '../api/socket';
 
 const NotificationContext = createContext(null);
 
@@ -28,9 +29,24 @@ export function NotificationProvider({ children }) {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+
+    if (user?.id) {
+      socket.emit('join_user', user.id);
+
+      const handleNewNotification = (newNotif) => {
+        setNotifications((prev) => [newNotif, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      };
+
+      socket.on('new_notification', handleNewNotification);
+
+      const interval = setInterval(fetchNotifications, 20000);
+      return () => {
+        socket.off('new_notification', handleNewNotification);
+        clearInterval(interval);
+      };
+    }
+  }, [fetchNotifications, user?.id]);
 
   const markAsRead = async (id) => {
     try {

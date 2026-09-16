@@ -1,6 +1,21 @@
 const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const db = require('../config/db');
 const { createNotification } = require('../services/notificationService');
+
+// Initialize Razorpay SDK instance if keys exist
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  try {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+    console.log('💳 Razorpay official payment gateway initialized.');
+  } catch (err) {
+    console.warn('⚠️ Failed to initialize Razorpay SDK:', err.message);
+  }
+}
 
 // Create Payment Order / Session for online checkout
 async function createPaymentOrder(req, res, next) {
@@ -43,12 +58,33 @@ async function createPaymentOrder(req, res, next) {
     const depositAmount = parseFloat(request.item_deposit || 0);
     const totalPayable = rentalAmount + depositAmount;
     const timestamp = Date.now();
-    const orderId = `order_uoh_${timestamp}_${Math.floor(1000 + Math.random() * 9000)}`;
+
+    let razorpayOrderId = null;
+    if (razorpay && totalPayable > 0) {
+      try {
+        const rzpOrder = await razorpay.orders.create({
+          amount: Math.round(totalPayable * 100), // paise
+          currency: 'INR',
+          receipt: `rcpt_${request.id}_${Date.now().toString().slice(-6)}`,
+          notes: {
+            borrowRequestId: String(request.id),
+            itemName: String(request.item_name).slice(0, 30),
+            borrowerEmail: req.user.email,
+          },
+        });
+        razorpayOrderId = rzpOrder.id;
+      } catch (rzpErr) {
+        console.warn('⚠️ Razorpay live order creation failed, fallback to local order ID:', rzpErr.message);
+      }
+    }
+
+    const orderId = razorpayOrderId || `order_uoh_${timestamp}_${Math.floor(1000 + Math.random() * 9000)}`;
 
     res.json({
       success: true,
       order: {
         orderId,
+        razorpayOrderId,
         borrowRequestId: request.id,
         itemName: request.item_name,
         rentalAmount,

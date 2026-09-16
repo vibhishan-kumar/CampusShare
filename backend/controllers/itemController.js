@@ -536,13 +536,16 @@ async function uploadItemImage(req, res, next) {
     const filePath = path.join(uploadsDir, safeName);
     fs.writeFileSync(filePath, buffer);
 
-    const fileUrl = `/uploads/${safeName}`;
+    // Upload to Cloudinary (or local fallback if Cloudinary credentials not configured)
+    const cloudinaryService = require('../services/cloudinaryService');
+    const uploadResult = await cloudinaryService.uploadImage(filePath, 'campusshare_items');
 
     res.json({
       success: true,
-      url: fileUrl,
+      url: uploadResult.url,
+      provider: uploadResult.provider,
       filename: safeName,
-      message: 'Image uploaded successfully from device.'
+      message: `Image uploaded successfully (${uploadResult.provider === 'cloudinary' ? 'Cloudinary CDN' : 'Local storage'}).`
     });
   } catch (err) {
     next(err);

@@ -19,9 +19,15 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { initSocket, getIO } = require('./services/socketService');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize Socket.IO real-time server
+initSocket(server);
 
 // Ensure uploads directory exists and serve statically
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -67,14 +73,21 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Attach io to req for route handlers
+app.use((req, res, next) => {
+  req.io = getIO();
+  next();
+});
+
 // Fallback & Error Handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (require.main === module) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`\n======================================================`);
     console.log(`🎓 CampusShare @ UoH Backend running on port ${PORT}`);
+    console.log(`⚡ Socket.IO Real-Time Engine Active`);
     console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
     console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
     console.log(`======================================================\n`);
@@ -82,3 +95,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.server = server;

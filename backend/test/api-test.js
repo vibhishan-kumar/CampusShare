@@ -158,14 +158,17 @@ async function runTests() {
     });
     assert(selfBorrow.status === 400, 'Student cannot borrow their own item');
 
-    // 8. Student 2 sends borrow request to Student 1
+    const todayDate = new Date();
+    const startDate = todayDate.toISOString().slice(0, 10);
+    const futureDate = new Date(todayDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
     const borrowRes = await request('/borrows', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token2}` },
       body: {
         item_id: itemId,
-        start_date: '2026-09-15',
-        end_date: '2026-09-17',
+        start_date: startDate,
+        end_date: futureDate,
         request_note: 'Need for preparing my dissertation viva.',
       },
     });

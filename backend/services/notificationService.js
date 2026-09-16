@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { emitToUser } = require('./socketService');
 
 async function createNotification({ userId, title, message, type, link = null }) {
   try {
@@ -8,7 +9,11 @@ async function createNotification({ userId, title, message, type, link = null })
        RETURNING *`,
       [userId, title, message, type, link, 0]
     );
-    return rows[0];
+    const notif = rows[0];
+    if (notif) {
+      emitToUser(userId, 'new_notification', notif);
+    }
+    return notif;
   } catch (err) {
     console.error('Failed to create notification:', err.message);
     return null;

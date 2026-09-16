@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const { validateRegistration, validateLogin } = require('../middleware/validationMiddleware');
 
 // Public routes
 router.post('/send-otp', authController.sendRegistrationOTP);
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+router.post('/register', validateRegistration, authController.register);
+router.post('/login', validateLogin, authController.login);
 router.get('/students/:id', authController.getPublicProfile);
 
 // Protected routes

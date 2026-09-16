@@ -12,12 +12,13 @@ A full-stack, campus-exclusive peer-to-peer sharing and rental platform built fo
 
 ## 🚀 Tech Stack
 
-* **Frontend**: React.js 18, Vite, React Router v6, Lucide Icons, Custom CSS Design System
-* **Backend**: Node.js, Express.js, RESTful API architecture
-* **Database**: PostgreSQL (11 normalized tables with triggers, constraints, foreign keys) + Zero-Config Dev SQLite Fallback
-* **Authentication**: JWT (JSON Web Tokens) + `bcryptjs` password hashing + `@uohyd.ac.in` domain verification
-* **Payments**: Integrated Online Payment Gateway Interface (UPI QR, Debit/Credit Card with 3D-Secure OTP, Net Banking, Razorpay Standard Checkout)
-* **File Uploads**: Multer local disk storage with image preview and presets
+* **Frontend**: React.js 18, React Router v6, HTML5, CSS3 Custom Design System, JavaScript (ES6+)
+* **Backend**: Node.js, Express.js, RESTful API architecture, **Socket.IO** (bi-directional real-time communication)
+* **Database**: PostgreSQL (11 normalized tables with triggers, constraints, foreign keys) & Raw SQL + Zero-Config Dev SQLite Fallback
+* **Authentication & Security**: JWT (JSON Web Tokens), `bcryptjs` password hashing, Role-Based Access Control (RBAC)
+* **Payments**: **Razorpay** (official SDK integration, server-side order generation, HMAC-SHA256 signature verification) + Escrow security deposit model
+* **Image Storage**: **Cloudinary** (cloud media hosting, auto-compression, CDN delivery) + local fallback
+* **Input Validation**: Dedicated Regex & Backend Validation Middleware (enforcing `@uohyd.ac.in` email format, 10-digit Indian phone numbers, password rules, date boundaries, and data constraints)
 
 ---
 

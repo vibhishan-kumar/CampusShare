@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { createNotification } = require('../services/notificationService');
+const { emitToUser, emitToConversation } = require('../services/socketService');
 
 // 1. Get or Create Conversation between Current User and Target User (optionally for an item)
 async function getOrCreateConversation(req, res, next) {
@@ -178,6 +179,16 @@ async function sendMessage(req, res, next) {
       [conversationId]
     );
 
+    const messagePayload = {
+      ...inserted[0],
+      sender_name: req.user.name,
+      sender_avatar: req.user.avatar_url,
+    };
+
+    // Emit real-time Socket.IO events to conversation participants and receiver
+    emitToConversation(conversationId, 'receive_message', messagePayload);
+    emitToUser(receiverId, 'new_message', messagePayload);
+
     // Notify receiver
     await createNotification({
       userId: receiverId,
@@ -190,11 +201,7 @@ async function sendMessage(req, res, next) {
     res.status(201).json({
       success: true,
       message: 'Message sent.',
-      data: {
-        ...inserted[0],
-        sender_name: req.user.name,
-        sender_avatar: req.user.avatar_url,
-      },
+      data: messagePayload,
     });
   } catch (err) {
     next(err);
